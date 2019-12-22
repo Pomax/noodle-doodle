@@ -1,0 +1,77 @@
+:root {
+    --w: 0.5em;
+}
+
+table {
+    background-color: inherit;
+    border: 3px solid black;
+    padding: 0;
+    border-spacing: 0;
+}
+
+tr {
+    display: flex;
+}
+
+tr:not(.master).scrubber td {
+    opacity: 1;
+}
+tr:not(.master).scrubber td:not(:first-child) {
+    background: red;
+    width: 100%;
+}
+
+tr.scrubber {
+    height: 1px;
+    padding: 0px;
+}
+
+tr:not(.master) td {
+    opacity: 0.2;
+}
+tr:not(.master).major td {
+    opacity: 0.3;
+}
+
+td {
+    display: block;
+    background-color: inherit;
+    border: none;
+}
+
+td.label {
+    font-family: monospace;
+    width: 1.5em;
+    line-height: 2em;
+    text-align: center;
+}
+tr:not(.master) td.label {
+    opacity: 1;
+}
+
+tr:not(.master) td.green {
+    opacity: 0.5;
+    background-color: lime;
+}
+
+tr:not(.master) td.red {
+    opacity: 0.5;
+    background-color: red;
+}
+
+.key {
+    z-index: 0;
+    background: rgb(252, 249, 243);
+    border: 1px solid black;
+    height: 1.5em;
+    width: var(--w);
+}
+
+.cd , .de , .fg , .ga , .ab {
+    background: rgb(35, 35, 53);
+    z-index: 1;
+}
+
+.key.e + .key.f {
+    margin-left: calc(var(--w) / -4);
+}
