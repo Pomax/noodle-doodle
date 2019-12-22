@@ -11,25 +11,34 @@
 </head>
 
 <body>
-  <table>
-    <tbody id="program" tabindex="0">
-      <tr class="scrubber">
-        <td class="label">&nbsp;</td>
-        <td colspan="*">&nbsp;</td>
-      </tr>
-      <!-- row data is made in JS -->
-    </tbody>
-  </table>
+  <main>
+    <header>
+      <h1>A melody sequencer idea</h1>
+    </header>
 
-  <section>
-    <h3>A melody sequencer idea</h3>
+    <label for="rotate">use horizontal piano roll orientation:</label> <input type="checkbox" id="rotate" checked>
+
+    <table class="rotated">
+      <tbody id="program" tabindex="0">
+        <tr class="scrubber">
+          <td class="label">&nbsp;</td>
+          <td colspan="*">&nbsp;</td>
+        </tr>
+        <!-- row data is made in JS -->
+      </tbody>
+    </table>
+
     <ul>
-        <li>four row keyboard</li>
-        <li>press-and-hold keys to record them. Timer will start to run indefinitely as long as keys are pressed.</li>
-        <li>holding shift + [1-8] while pressing individual keys will drop that many keypresses in a row.</li>
+      <li>four row keyboard, [z]-[m] is C2, [q]-[u] is C3, [i]-[p] is the C4-E4 cluster.</li>
+      <li>Press-and-hold keys to record them. "Click" timer will start to run indefinitely as long as any keys are pressed.</li>
+      <li>[shift]-[1-8] enables/disables fixed-size placement of single keys, filling and moving the scrubber by that many steps.</li>
+      <li>[delete] clears the current row</li>
+      <li>[backspace] is go-to-previous-step + delete</li>
+      <li>[shift]-[backspace] is delete + go-to-next-step</li>
+      <li>Mouse-click a specific key cell to enable/disable it</li>
+      <li>Mouse-click-drag an active key around (in the same time step), with step playback as you drag</li>
     </ul>
-  </section>
-
+  </main>
 </body>
 
 </html>

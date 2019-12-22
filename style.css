@@ -2,11 +2,32 @@
     --w: 0.5em;
 }
 
+label, input[checkbox] {
+    display: inline-block;
+    cursor: pointer;
+    z-index: 100;
+}
+
 table {
+    display: block;
+    z-index: 1;
     background-color: inherit;
-    border: 3px solid black;
     padding: 0;
     border-spacing: 0;
+    user-select: none;
+}
+
+#rotate:checked + table {
+    transform-origin: 50% 50%;
+    transform: rotate(-90deg) translate(-2em, 0em);
+    width: 38em;
+    overflow: visible;
+    height: 34em;
+    margin-bottom: 5em;
+}
+
+tbody:focus {
+    outline: 0;
 }
 
 tr {
@@ -41,10 +62,20 @@ td {
 
 td.label {
     font-family: monospace;
+    font-weight: bold;
     width: 1.5em;
     line-height: 2em;
     text-align: center;
 }
+
+#rotate:checked + table td.label {
+    transform: rotate(90deg);
+}
+
+td.label.highlight {
+    background: rgb(189, 231, 229);
+}
+
 tr:not(.master) td.label {
     opacity: 1;
 }

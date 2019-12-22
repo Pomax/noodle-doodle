@@ -1,10 +1,11 @@
 import { Tone } from "./Tone.js";
-const synth = new Tone.PolySynth(8, Tone.Synth, {
+const synth = new Tone.PolySynth(16, Tone.Synth, {
     oscillator : {
           type : "square"
       }
   }).toMaster();
 const beat = new Tone.Synth().toMaster();
+const preroll = 2;
 const noBeep = false;
 const BPM = 130;
 const tickLength = 60000 / BPM;
@@ -16,18 +17,22 @@ const lengths = `1,2,3,4,5,6,7,8`.split(`,`);
 let duration = false;
 
 function createCells(track,label) {
-    let l = document.createElement('td');
-    l.classList.add('label');
-    l.textContent = label;
-    track.appendChild(l);
+    let td = document.createElement('td');
+    td.classList.add('label');
+    if (label <= 8) td.dataset.step = label;
+    td.textContent = label;
+    track.appendChild(td);
+
     octaves.forEach(o => {
         keys.forEach(k => {
             let td = document.createElement('td');
             td.dataset.note = k.toUpperCase() + o;
             td.classList.add(k, 'key', `o${o}`);
+            td.draggable = true;
             track.appendChild(td);
         });
     });
+
     return track;
 }
 
@@ -62,22 +67,24 @@ function clear() {
 // --------------
 
 let activeKeys = {};
-let recCount = 0;
+let recording = false;
 let last = 0;
 
 function getTick() {
     return Array.from(scrubber.parentNode.children).indexOf(scrubber) - 1;
 }
 function startRecording() {
-    if (recCount === 0) {
-        last = Date.now();
+    if (!recording) {
+        recording = true;
+        last = Date.now() + preroll * tickLength;
         requestAnimationFrame(record);
     }
-    recCount++;
 }
 
 function stopRecording() {
-    recCount--;
+    if (Object.keys(activeKeys).length===0) {
+        recording = false;
+    }
 }
 
 function onBeat(fn1, fn2) {
@@ -107,7 +114,7 @@ function record() {
     // 2. move the scrubber
     () => scrubberDown());
 
-    if (recCount > 0) {
+    if (recording) {
         requestAnimationFrame(record);
     }
 }
@@ -125,23 +132,28 @@ function togglePlay() {
 }
 
 function playMusic() {
-    onBeat(() => {
-        let track = scrubber.nextElementSibling;
-        if (track) {
-            // get all "red" keys, play them.
-            track.querySelectorAll('td.red').forEach(cell => {
-                let note = cell.dataset.note;
-                if (note.length === 3) note = note[0] + '#' + note[2];
-                synth.triggerAttackRelease(note, "8n");
-            });
-        }
-    },() => scrubberDown());
+    onBeat(playCurrentRow, scrubberDown);
     if (playing) requestAnimationFrame(playMusic);
+}
+
+function playCurrentRow(track) {
+    track = track || scrubber.nextElementSibling;
+    if (track) {
+        // get all "red" keys, play them.
+        track.querySelectorAll('td.red').forEach(cell => {
+            let note = cell.dataset.note;
+            if (note.length === 3) {
+                note = note[0] + '#' + note[2];
+            }
+            synth.triggerAttackRelease(note, "8n");
+        });
+    }
 }
 
 // --------------
 
 function scrubberUp(stickToTop, largeSkip) {
+    program.querySelectorAll(`.green`).forEach(e => e.classList.remove(`green`));
     let prev = scrubber.previousElementSibling;
     if (largeSkip) {
         let n = 8;
@@ -158,9 +170,11 @@ function scrubberUp(stickToTop, largeSkip) {
         program.appendChild(scrubber);
         program.insertBefore(scrubber, scrubber.previousElementSibling);
     }
+    if (!playing) playCurrentRow();
 }
 
 function scrubberDown(stickToBottom, largeSkip) {
+    program.querySelectorAll(`.green`).forEach(e => e.classList.remove(`green`));
     let next = scrubber.nextElementSibling;
     if (largeSkip) {
         let n = 8;
@@ -177,33 +191,64 @@ function scrubberDown(stickToBottom, largeSkip) {
     } else if (!stickToBottom) {
         program.insertBefore(scrubber, master.nextElementSibling);
     }
+    if (!playing) playCurrentRow();
 }
+
+// -----------
 
 function stop(evt) { evt.preventDefault(); }
 
 function keyDown(evt) {
     // explicit duration? (non-exclusive)
     if (evt.shiftKey && lengths.includes(String.fromCharCode(evt.keyCode))) {
-        duration = parseInt(String.fromCharCode(evt.keyCode));
+        let step = parseInt(String.fromCharCode(evt.keyCode));
+        if (duration) {
+            let marker = program.querySelector(`td.label[data-step="${duration}"]`);
+            marker.classList.remove('highlight');
+            if (step === duration) {
+                return (duration = false);
+            }
+        }
+
+        duration = step;
+        let marker = program.querySelector(`td.label[data-step="${duration}"]`);
+        marker.classList.add('highlight');
+    }
+
+    if (evt.key === "Home") {
+        program.insertBefore(scrubber, master.nextElementSibling);
+        if (!playing) playCurrentRow();
+    }
+
+    if (evt.key === "End") {
+        program.appendChild(scrubber);
+        program.insertBefore(scrubber,scrubber.previousElementSibling);
+        if (!playing) playCurrentRow();
     }
 
     // move scrubber up
-    if (evt.key === "ArrowUp") {
+    if (evt.key === "ArrowUp" || evt.key === "ArrowLeft") {
         stop(evt);
         scrubberUp(false, evt.shiftKey);
     }
 
     // move scrubber down
-    else if (evt.key === "ArrowDown") {
+    else if (evt.key === "ArrowDown" || evt.key === "ArrowRight") {
         stop(evt);
         scrubberDown(false, evt.shiftKey);
     }
 
-    // intercept the "backspace". It should delete the previous row.
+    // intercept the "backspace". It should delete and move the scrubber.
     else if (evt.key === "Backspace") {
         stop(evt);
-        scrubberUp();
-        clear();
+        // "back" by default, "forward" if we're shift-backspacing
+        if (evt.shiftKey) {
+            clear();
+            scrubberDown()
+        } else {
+            scrubberUp();
+            clear();
+        }
     }
 
     // "delete" should delete the current row
@@ -229,6 +274,13 @@ function keyDown(evt) {
             if (track) {
                 cell = track.querySelector(`td:nth-child(${offset})`);
                 cell.classList.add('green');
+
+                // color any other active key green, too.
+                Object.keys(activeKeys).forEach(offset => {
+                    let cell = track.querySelector(`td:nth-child(${offset})`);
+                    cell.classList.add('green');
+                });
+
                 note = cell.dataset.note;
                 if (note.length === 3) note = note[0] + '#' + note[2];
 
@@ -248,6 +300,9 @@ function keyDown(evt) {
 
                     if (!activeKeys[offset]) {
                         activeKeys[offset] = true;
+                    }
+
+                    if (!recording) {
                         startRecording();
                     }
 
@@ -261,7 +316,6 @@ function keyDown(evt) {
 }
 
 function keyUp(evt) {
-    if (evt.shiftKey && lengths.includes(String.fromCharCode(evt.keyCode))) { duration = false }
     if (evt.keyCode === 38) {}
     else if (evt.keyCode === 40) {}
     else {
@@ -286,4 +340,52 @@ function keyUp(evt) {
 
 document.addEventListener('keydown', keyDown);
 document.addEventListener('keyup', keyUp);
+
+// -------------------
+
+let curCell = false;
+
+function dragStart(evt) {
+    if (evt.target.classList.contains('red')) {
+        curCell = evt.target;
+    }
+
+    // prevent the ghost image:
+    return false;
+}
+
+function dragEnd(_evt) {
+    curCell = false;
+}
+
+function drag(evt) {
+    let t = evt.target;
+    if (t !== curCell && t.parentNode === curCell.parentNode) {
+        curCell.classList.remove('red');
+        t.classList.add('red');
+        curCell = t;
+        playCurrentRow(curCell.parentNode);
+    }
+
+    // prevent the ghost image:
+    return false;
+}
+
+document.addEventListener('dragstart', dragStart);
+document.addEventListener('dragend', dragEnd);
+document.addEventListener('dragover', drag);
+
+// ----------
+
+function clicked(evt) {
+    let e = evt.target;
+    if (e.classList.contains(`key`)) {
+        e.classList.toggle(`red`);
+    }
+}
+
+document.addEventListener('click', clicked);
+
+// ----------
+
 program.focus();
