@@ -216,11 +216,13 @@ function keyDown(evt) {
     }
 
     if (evt.key === "Home") {
+        stop(evt);
         program.insertBefore(scrubber, master.nextElementSibling);
         if (!playing) playCurrentRow();
     }
 
     if (evt.key === "End") {
+        stop(evt);
         program.appendChild(scrubber);
         program.insertBefore(scrubber,scrubber.previousElementSibling);
         if (!playing) playCurrentRow();
