@@ -228,6 +228,10 @@ function keyDown(evt) {
         if (!playing) playCurrentRow();
     }
 
+    if (evt.key === "Return" || evt.key === "Enter") {
+        if (!playing) playCurrentRow();
+    }
+
     // move scrubber up
     if (evt.key === "ArrowUp" || evt.key === "ArrowLeft") {
         stop(evt);
