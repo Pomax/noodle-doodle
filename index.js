@@ -5,7 +5,7 @@ const synth = new Tone.PolySynth(16, Tone.Synth, {
       }
   }).toMaster();
 const beat = new Tone.Synth().toMaster();
-const preroll = 2;
+const preroll = 1;
 const noBeep = false;
 const BPM = 130;
 const tickLength = 60000 / BPM;
