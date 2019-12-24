@@ -13,34 +13,167 @@
 <body>
   <main>
     <header>
-      <h1>A melody sequencer idea</h1>
+      <h1>An actually useful piano roll / sequencer view</h1>
+      <h3>A mostly-keyboard UX PoC/experiment</h3>
     </header>
 
-    <label for="rotate">use horizontal piano roll orientation:</label> <input type="checkbox" id="rotate" checked>
+    <div id="sequencer">
+      <label for="rotate">use horizontal piano roll orientation:</label> <input type="checkbox" id="rotate" checked>
 
-    <table class="rotated">
-      <tbody id="program" tabindex="0">
-        <tr class="scrubber">
-          <td class="label">&nbsp;</td>
-          <td colspan="*">&nbsp;</td>
-        </tr>
-        <!-- row data is made in JS -->
-      </tbody>
-    </table>
+      <table class="rotated">
+        <tbody id="program" tabindex="0">
+          <tr class="scrubber">
+            <td class="label">&nbsp;</td>
+            <td colspan="*">&nbsp;</td>
+          </tr>
+          <!-- piano roll steps/cells are constructed in JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      This uses a 32 key "virtual keyboard" based on US-International
+      key layout. [z] maps to C2, [q] maps to C3, [i] maps to C4.
+    </p>
+
+    <pre>
+ s d   g h j
+z x c v b n m
+</pre>
+
+    <pre>
+ 2 3   5 6 7
+q w e r t y u
+</pre>
+
+    <pre>
+ 9 0   =
+i o p [ ]
+</pre>
+
+    <h3>Input options </h3>
 
     <ul>
-      <li>four row keyboard, [z]-[m] is C2, [q]-[u] is C3, [i]-[p] is the C4-E4 cluster.</li>
-      <li>Press-and-hold keys to record them. "Click" timer will start to run indefinitely as long as any keys are pressed.</li>
-      <li>[shift]-[1-8] enables/disables fixed-size placement of single keys, filling and moving the scrubber by that many steps.</li>
+      <li>Press-and-hold keys to record them. "Click" timer will start to run indefinitely as long as any keys are
+        pressed.</li>
+      <li>[shift]-[1-8] enables/disables fixed-size placement of single keys, filling and moving the scrubber by that
+        many steps.</li>
       <li>[delete] clears the current row</li>
       <li>[backspace] is go-to-previous-step + delete</li>
       <li>[shift]-[backspace] is delete + go-to-next-step</li>
       <li>Mouse-click a specific key cell to enable/disable it</li>
-      <li>Mouse-click-drag an active key around (in the same time step), with step playback as you drag</li>
+      <li>Hold the mouse pressed after placing a key to move it around within the same step</li>
       <li>Arrow keys move the scrubber, and will play the notes for the steps moved to</li>
+      <li>[shift] + Arrow keys moves the scrubber in steps of 8</li>
       <li>[enter]/[return] plays the current steps' notes</li>
       <li>[space] plays/stops the entire "song", starting at the step that the scrubber is on</li>
     </ul>
+
+    <h3>How is this different from every other piano roll/sequencer?</h3>
+
+    <p>
+      Let's prefix this by saying that I own FL Studio, Presonus Studio One, Renoise,
+      Ableton Live, Sonar Pro, and Reaper. While I'm of course not the deepest of
+      experts on any single one of those, In the same way that a programmer can work in
+      several IDEs and code editors and see where everything's failing, I work in all
+      these DAW and see the failing of each of their piano roll/sequencer views, because
+      that's the view I live in (rather than recording to audio). While you would expect
+      each DAW to optimize for "getting what the user wants to play, recorded, and as
+      fast as possible with as few operations as necessary", none of them even
+      actually do this. The DAW that comes closest is Renoise, which is basically
+      Tracker software for the modern era, with all of the same features that any
+      other DAW comes with these days. But even it has fairly odd limitations.
+      So, what's my beef, and how does this PoC address them?
+    </p>
+
+    <h4>Record when I start playing</h4>
+
+    <p>
+      When in piano roll/sequencer view, you want to create music. Sure, it's helpful
+      to hear sounds when you press keys, but what you <em>want</em> is to press keys,
+      and have those be recorded, at the length you need. That's the whole point of
+      opening music software in the first place: to get music to happen.
+    </p>
+
+    <p>
+      This PoC addresses that by letting you play around with keys until you have something
+      that sounds good, at which point you shouldn't need to "arm" tracks, and manually
+      trigger record/stop transport functions: you're already on the track you intend
+      to record, and the fact that you are means <em>you want to record something</em>.
+      By all means, support full-song playback while recording, because that's bloody
+      useful, but don't make that be the only way to record when the user is on a piano
+      roll/sequencer view: holding your keys down for long enough should just trigger a
+      recording.
+    </p>
+
+    <p>
+      Doing so in this PoC at around the length of a quarter note at 120BPM will engage
+      recording mode, with a BPM ticker so you can keep pace while playing. And then when
+      you stop playing, recording will stop, too. At worst, you now record "too much", but:
+      undo/deleting what you didn't want is infinitely preferable to not having what you
+      <em>did</em> want.
+    </p>
+
+    <h4>Why can't I move the scrubber?</h4>
+
+    <p>
+      Moving the scrubber around in effectively anything that isn't Renoise requires
+      weird hot keys, or even the mouse. When you're focussed on a piano roll/sequencer,
+      arrow keys should just work.
+    </p>
+
+    <!--
+    <h4>There are 128 MIDI key codes. Why do I only get 24?</h4>
+
+    <p>
+      Depending on the DAW you're using, you'll get either one to two-and-a-half octaves
+      of keys, and if you need more octaves, changing the base note octave value means
+      navigating to a completely different part of the UI (if that luxury even exists)
+      and then coming back to the piano roll/sequencer after changing the virtual keyboard.
+    </p>
+
+    <p>
+      We can't fit, nor would we even want to fit, all of C0 through C10 at the same time.
+      So let users use their [+] and [-] keys to scroll through the octaves.
+      This is literally one of the simplest things you should be able to do.
+      And if you're worried about content "scrolling off the screen", _transpose_ the
+      input: [+] and [-] to remap the input to semi-tones higher/lower with a
+      [shift]-[+]/[-] to go up/down entire octaves. This is not rocket science.
+    </p>
+    -->
+
+    <h4>Arpeggiation is kind of essential</h4>
+
+    <p>
+      An arpeggio line should be as easy as saying "k, until I stay it isn't, every key
+      I press takes up X beats" after which you should be able to just run through the
+      notes you need to have played in arpeggiated fashion.
+      That toggle should be simple, and immediate.
+    </p>
+
+    <p>
+      In this PoC, [shift]-[1] through [shift]-[8] turn on arpeggiation at a note
+      length corresponding to as many beats as the number you type. Type the same
+      thing again, or [shift]-[0], to turn that back off. This isn't rocket-science.
+    </p>
+
+    <h4>What am I playing here?</h4>
+
+    <p>
+      Having to actually <em>play</em> the song just hear the current step's note stack
+      makes <em>no</em> sense. Of course, people should be able to start playing from
+      wherever the scrubber is right now, but they should also have a dedicated key for
+      playing <em>just</em> the current step when in a piano roll/sequencer view.
+      This PoC uses [enter]/[return].
+    </p>
+
+    <p>
+      Related, when placing a new note in a cluster of notes, audio software should not
+      play "that single note", it should play everything in that step. It might emphasise
+      the note being played, but really it should just "show" you what you'll hear at
+      that step, not leave you guessing at whether or not that new note works with the
+      ones already there.
+    </p>
   </main>
 </body>
 

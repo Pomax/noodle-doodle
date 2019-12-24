@@ -1,19 +1,14 @@
-import { Tone } from "./Tone.js";
-const synth = new Tone.PolySynth(16, Tone.Synth, {
-    oscillator : {
-          type : "square"
-      }
-  }).toMaster();
-const beat = new Tone.Synth().toMaster();
+import { synth, beat } from "./audio.js";
+const BPM = 130;
 const preroll = 2;
 const noBeep = false;
-const BPM = 130;
 const tickLength = 60000 / BPM;
 
-const octaves = [2,3,4,5];
+const octaves = [0,1,2,3,4,5,6,7,8];
+let octave = 2;
 const keys = 'c,cd,d,de,e,f,fg,g,ga,a,ab,b'.split(`,`);
-const offsets = `⻀,⻀,z,s,x,d,c,v,g,b,h,n,j,m,q,2,w,3,e,r,5,t,6,y,7,u,i,9,o,0,p`.split(`,`);
-const lengths = `1,2,3,4,5,6,7,8`.split(`,`);
+const offsets = `✖,✖,z,s,x,d,c,v,g,b,h,n,j,m,q,2,w,3,e,r,5,t,6,y,7,u,i,9,o,0,p,[,=,]`.split(`,`);
+const lengths = `1,2,3,4,5,6,7,8,0`.split(`,`);
 let duration = false;
 
 function createCells(track,label) {
@@ -23,7 +18,9 @@ function createCells(track,label) {
     td.textContent = label;
     track.appendChild(td);
 
-    octaves.forEach(o => {
+    let n = 4;
+    while (n-->0) {
+        let o = octave + (4 - n);
         keys.forEach(k => {
             let td = document.createElement('td');
             td.dataset.note = k.toUpperCase() + o;
@@ -31,7 +28,7 @@ function createCells(track,label) {
             td.draggable = true;
             track.appendChild(td);
         });
-    });
+    };
 
     return track;
 }
@@ -69,12 +66,15 @@ function clear() {
 let activeKeys = {};
 let recording = false;
 let last = 0;
+let stopTimeout = false;
 
 function getTick() {
     return Array.from(scrubber.parentNode.children).indexOf(scrubber) - 1;
 }
 function startRecording() {
     if (!recording) {
+        clearTimeout(stopTimeout);
+        stopTimeout = false;
         recording = true;
         last = Date.now() + preroll * tickLength;
         requestAnimationFrame(record);
@@ -82,9 +82,12 @@ function startRecording() {
 }
 
 function stopRecording() {
-    if (Object.keys(activeKeys).length===0) {
-        recording = false;
-    }
+    if (stopTimeout) clearTimeout(stopTimeout);
+    stopTimeout = setTimeout(() => {
+        if (stopTimeout && Object.keys(activeKeys).length===0) {
+            recording = false;
+        }
+    }, tickLength);
 }
 
 function onBeat(fn1, fn2) {
@@ -202,6 +205,7 @@ function keyDown(evt) {
     // explicit duration? (non-exclusive)
     if (evt.shiftKey && lengths.includes(String.fromCharCode(evt.keyCode))) {
         let step = parseInt(String.fromCharCode(evt.keyCode));
+
         if (duration) {
             let marker = program.querySelector(`td.label[data-step="${duration}"]`);
             marker.classList.remove('highlight');
@@ -210,9 +214,13 @@ function keyDown(evt) {
             }
         }
 
-        duration = step;
-        let marker = program.querySelector(`td.label[data-step="${duration}"]`);
-        marker.classList.add('highlight');
+        if (step === 0) {
+            duration = false;
+        } else {
+            duration = step;
+            let marker = program.querySelector(`td.label[data-step="${duration}"]`);
+            marker.classList.add('highlight');
+        }
     }
 
     if (evt.key === "Home") {
@@ -230,6 +238,16 @@ function keyDown(evt) {
 
     if (evt.key === "Return" || evt.key === "Enter") {
         if (!playing) playCurrentRow();
+    }
+
+    if (evt.key === "+" && octave < 5) {
+        octave++;
+        updateKeyOctaves();
+    }
+
+    if (evt.key === "-" && octave > 0) {
+        octave--;
+        updateKeyOctaves();
     }
 
     // move scrubber up
@@ -383,14 +401,17 @@ document.addEventListener('dragover', drag);
 
 // ----------
 
-function clicked(evt) {
-    let e = evt.target;
-    if (e.classList.contains(`key`)) {
-        e.classList.toggle(`red`);
+function mouseDown(evt) {
+    if (document.hasFocus() && document.activeElement === program) {
+        let e = evt.target;
+        if (e.classList.contains(`key`)) {
+            e.classList.toggle(`red`);
+            playCurrentRow(e.parentNode);
+        }
     }
 }
 
-document.addEventListener('click', clicked);
+document.addEventListener('mousedown', mouseDown);
 
 // ----------
 

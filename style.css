@@ -1,11 +1,47 @@
 :root {
     --w: 0.5em;
 }
+html {
+    background: #222;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    position: absolute;
+    top: 0;
+    left: calc(50% - 500px);
+    right: calc(50% - 500px);
+    margin: auto;
+    background: #FFFFFD;
+    padding: 0 1em;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+header {
+    text-align: center;
+}
+
+h1 {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-weight: 400;
+    font-size: 2rem;
+}
+
+pre {
+    background: #CCC;
+    margin-left: 2em;
+    padding: 0.5em;
+    display: inline-block;
+    font-family: 'Courier New', Courier, monospace
+}
 
 label, input[checkbox] {
     display: inline-block;
     cursor: pointer;
     z-index: 100;
+    user-select: none;
 }
 
 table {
@@ -17,12 +53,17 @@ table {
     user-select: none;
 }
 
+#rotate + table {
+    margin-top: 1em;
+}
+
 #rotate:checked + table {
     transform-origin: 50% 50%;
-    transform: rotate(-90deg) translate(-2em, 0em);
-    width: 38em;
+    transform: rotate(-90deg) translate(-2em, -1em);
+    width: 37.25em;
     overflow: visible;
     height: 34em;
+    margin-top: 0;
     margin-bottom: 5em;
 }
 
