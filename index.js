@@ -1,4 +1,5 @@
 import { synth, beat } from "./audio.js";
+
 const BPM = 130;
 const preroll = 2;
 const noBeep = false;
